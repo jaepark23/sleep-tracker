@@ -1,14 +1,20 @@
 from tkinter import *
+
 import datetime as datetime
+
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib
+
 from matplotlib.figure import Figure
+
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
 NavigationToolbar2Tk)
 
 
+# https://www.pythoncharts.com/matplotlib/beautiful-bar-charts-matplotlib/
+
 class main(Tk): # https://www.geeksforgeeks.org/tkinter-application-to-switch-between-different-page-frames/
+    # class that controls which frames are displayed 
+
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
 
@@ -31,15 +37,15 @@ class main(Tk): # https://www.geeksforgeeks.org/tkinter-application-to-switch-be
     
     def show_frame(self, cont):
         frame = self.frames[cont]
+        frame.reset()
         frame.tkraise()
 
 
 class graphPage(Frame):
     def __init__(self, master, controller):
         Frame.__init__(self, master)
-
-        # controller.geometry('1000x1000')
-
+        
+        self.controller = controller
         self.days_of_week = {'0': 'MON', '1': 'TUE', '2' : 'WED', '3': 'THU', '4' : 'FRI', '5' : 'SAT', '6' : 'SUN'}
 
         self.calculator_button = Button(self, text = "Calculator", command = lambda : controller.show_frame(calculatorPage))
@@ -68,28 +74,55 @@ class graphPage(Frame):
         self.canvas.get_tk_widget().grid(row = 0, column = 0)
 
         self.times = calculatorPage.create_file(self)
-        self.times['Date'] = pd.to_datetime(self.times['Date']) # 1 (optim.)
+        self.times['Date'] = pd.to_datetime(self.times['Date']) # 1 (optimize)
 
         self.toolbarFrame = Frame(master=self) # https://stackoverflow.com/questions/12913854/displaying-matplotlib-navigation-toolbar-in-tkinter-via-grid (LBoss)
         self.toolbarFrame.grid(row= 1,column=0)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.toolbarFrame)
 
-    def bar_plot(self): 
+    def bar_plot(self):
+        df = self.times
         option = self.bin.get()
-        if option == "Week":
+        if option == 'Day':
+            df = self.group_day()
+        elif option == "Week":
             df = self.group_week()
-            self.plot.set_xticks(df['Date']) # https://stackoverflow.com/questions/3486121/how-to-plot-data-against-specific-dates-on-the-x-axis-using-matplotlib
-            self.plot.set_xticklabels([date.strftime('%m-%d-%Y') for date in df['Date']])
+        else:
+            df = self.group_month()
+            # self.plot.set_xticks(df['Date']) ERROR: (matplotlib.units.ConversionError: Failed to convert value(s) to axis units)
+            # self.plot.set_xticklabels(df['Date'])
             self.plot.bar(df['Date'], df['Cycles'])
+            self.plot.set_axisbelow(True)
+            self.plot.yaxis.grid(True, color = '#EEEEEE')
+            self.canvas.draw()
+            return
+        self.plot.set_xticks(df['Date']) # https://stackoverflow.com/questions/3486121/how-to-plot-data-against-specific-dates-on-the-x-axis-using-matplotlib
+        self.plot.set_xticklabels([date.strftime('%m-%d-%Y') for date in df['Date']])
+        self.plot.bar(df['Date'], df['Cycles'])
+        self.plot.set_axisbelow(True)
+        self.plot.yaxis.grid(True, color = '#EEEEEE')
         self.canvas.draw()
     
     def line_plot(self):
+        df = self.times
         option = self.bin.get()
-        if option == "Week": 
+        if option == 'Day':
+            df = self.group_day()
+        elif option == "Week":
             df = self.group_week()
-            self.plot.set_xticks(df['Date'])
-            self.plot.set_xticklabels([date.strftime('%m-%d-%Y') for date in df['Date']])
-            self.plot.plot(df['Date'], df['Cycles'])
+        else:
+            df = self.group_month()
+            self.plot.plot(df['Date'], df['Cycles'], marker = ".", markersize = 5, linewidth = 1.3)
+            self.plot.set_axisbelow(True)
+            self.plot.yaxis.grid(True, color = '#EEEEEE')
+            self.canvas.draw()
+            return
+        self.plot.set_xticks(df['Date'])
+        self.plot.set_xticklabels([date.strftime('%m-%d-%Y') for date in df['Date']])
+        self.plot.plot(df['Date'], df['Cycles'], marker = ".", markersize = 5, linewidth = 1.3)
+        self.plot.set_axisbelow(True)
+        self.plot.yaxis.grid(True, color = '#EEEEEE')
+        self.plot.fill_between(df['Date'], 0, df['Cycles'], alpha = .5)
         self.canvas.draw()
 
     def clear_plot(self):
@@ -104,11 +137,21 @@ class graphPage(Frame):
         freq = 'W-' + self.days_of_week[str(first_day.weekday())]
         return self.times.groupby(pd.Grouper(key='Date', freq=freq))['Cycles'].sum().reset_index() #https://stackoverflow.com/questions/45281297/group-by-week-in-pandas/45281439
 
+    def group_month(self):
+        return self.times.groupby(self.times['Date'].dt.strftime('%b-%Y'))['Cycles'].sum().reset_index().sort_values('Date', ascending= False)
+
+    def group_day(self):
+        return self.times.groupby(pd.Grouper(key='Date', freq='D'))['Cycles'].sum().reset_index() 
+
+    def reset(self):
+        self.controller.geometry('1350x875')
 
 class calculatorPage(Frame):
     def __init__(self, master, controller):
         Frame.__init__(self, master)
 
+        self.controller = controller
+        self.controller.title('Sleep Calculator')
         self.times = self.create_file()
 
         self.cycle_label = Label(self, text = "Cycle Length", font = ('bold', 12))
@@ -121,10 +164,10 @@ class calculatorPage(Frame):
         self.target_entry = Entry(self)
         self.target_entry.grid(row = 0, column = 3)
 
-        self.time_text = StringVar()
-        self.time_text.set("AM")
-        self.time_entry = OptionMenu(self, self.time_text, *["AM", "PM"])
-        self.time_entry.grid(row = 0, column = 4)
+        self.am_pm = StringVar()
+        self.am_pm.set("AM")
+        self.ampm_entry = OptionMenu(self, self.am_pm, *["AM", "PM"])
+        self.ampm_entry.grid(row = 0, column = 4)
 
         self.time_list = Listbox(self, height = 6, width = 18, font = ('Times', 14))
         self.time_list.grid(row = 3, column = 1, columnspan = 3, rowspan = 7, pady= 5, padx= 9)
@@ -142,34 +185,36 @@ class calculatorPage(Frame):
     def generate_time(self): # generate list of sleep times 
         self.time_list.delete(0, 'end')
         format = "%I:%M %p"
-        c = datetime.timedelta(minutes = int(self.cycle_entry.get()))
-        wake_time = self.target_entry.get()
-        if wake_time == "":
-            n = datetime.datetime.now()
+        cycle_mins = datetime.timedelta(minutes = int(self.cycle_entry.get()))
+        target_time = self.target_entry.get()
+        if target_time == "":
+            now = datetime.datetime.now()
             for i in range(1, 7):
-                n += c
-                self.time_list.insert(i, str(i) + " cycle(s) - " + n.strftime(format))
+                now += cycle_mins
+                self.time_list.insert(i, str(i) + " cycle(s) - " + now.strftime(format))
         else:
-            period = self.time_text.get()
-            wake_time = self.target_entry.get() + " " + period
-            t = datetime.datetime.strptime(wake_time, format)
+            period = self.am_pm.get()
+            target_time = self.target_entry.get() + " " + period
+            target_time = datetime.datetime.strptime(target_time, format)
             # delta = datetime.timedelta(hours = t.hour, minutes = t.minute)
             for i in range(1, 7):
-                t -= c
-                self.time_list.insert(i, str(i) + " cycle(s) - " + t.strftime(format))
+                target_time -= cycle_mins
+                self.time_list.insert(i, str(i) + " cycle(s) - " + target_time.strftime(format))
     
     def extract_time(self): # return data you inputted into input_time()
         time = self.time_list.get(self.time_list.curselection())
         sleep_time = datetime.datetime.now().strftime("%I:%M %p")
         if self.target_entry.get() == "":
             return sleep_time, time[-8::],  time[0]
-        return time[-8::], self.target_entry.get(), time[0] # return format: [what time sleep, wake up time, # of cycles]
+        return time[-8::], self.target_entry.get(), time[0] # return format: [sleep time, wake up time, # of cycles]
     
-    def input_time(self): # input data into dataframe 
+    def input_time(self): # input data into dataframe (input sleep date day before wake day)
         sleep_time, wake_time, cycles = self.extract_time()
         today = datetime.datetime.now()
+        if today.strftime('%p') == 'AM':
+            today -= datetime.timedelta(days = 1)
         today = today.strftime("%m/%d/%Y")
-        self.times = self.times.append({'Date' : today, 'Sleep Time': sleep_time, "Wake Time": wake_time + ' ' + self.time_text.get(), "Cycles": cycles, "Cycle Length": self.cycle_entry.get()}, ignore_index = True)
+        self.times = self.times.append({'Date' : today, 'Sleep Time': sleep_time, "Wake Time": wake_time + ' ' + self.am_pm.get(), "Cycles": cycles, "Cycle Length": self.cycle_entry.get()}, ignore_index = True)
         self.times.to_csv('times.csv')
 
     def create_file(self): # check if csv file in directory
@@ -181,8 +226,9 @@ class calculatorPage(Frame):
             times.to_csv('times.csv')
             times = pd.read_csv('times.csv', index_col=[0])
             return times
-
-
+    
+    def reset(self):
+        self.controller.geometry('550x400')
 
 
 if __name__ == "__main__":
