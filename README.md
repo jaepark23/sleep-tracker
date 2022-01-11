@@ -1,5 +1,6 @@
 # sleep-tracker
-Simple GUI that calculates what time you should sleep and keeps track of your sleep everyday with a CSV file
+Simple GUI that calculates what time you should sleep and keeps track of your sleep everyday with a CSV file 
+(not completely finished)
 
 ![image](ss1.PNG)
 
