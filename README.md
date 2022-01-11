@@ -1,6 +1,8 @@
 # sleep-tracker
 
-![image](Capture.PNG)
+![image](ss1.PNG)
+
+![image](ss2.PNG)
 
 Simple GUI that calculates what time you should sleep and keeps track of your sleep everyday with a CSV file
 
