@@ -1,11 +1,23 @@
 # sleep-tracker
+Simple GUI that calculates what time you should sleep and keeps track of your sleep everyday with a CSV file
 
 ![image](ss1.PNG)
 
 ![image](ss2.PNG)
 
-Simple GUI that calculates what time you should sleep and keeps track of your sleep everyday with a CSV file
+## Calculator Page 
+* Enter the length of preferred sleep cycle (in minutes) and enter what time you want to wake up and whether AM or PM 
+* Click generate to view what times you should sleep 
+* If you do not have to wake up a certain time, leave Target Time blank and the script will calculate what time you should wake up given you sleep then.  
+* Click Graph to view the graphing page 
 
-(if you leave target time blank, then script will generate times of when you should wake up given you sleep at that momemt)
+## Graph Page
+* Choose whether you want a day, week, or month bin size and choose which plot you want to see 
+* Hit clear plot after cuz I haven't figured out how to clear it after every plot click yet
+* Click Calculator to go back to calculator page
 
-Transfer button will input your sleep time, wake up time, # of cycles, and cycle length
+## What I used
+* Tkinter for GUI
+* Matplotlib for graphs
+* Pandas to work with the csv file 
+* Datetime to work with time stuff
