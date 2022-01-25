@@ -22,3 +22,7 @@ Simple GUI that calculates what time you should sleep and keeps track of your sl
 * Matplotlib for graphs
 * Pandas to work with the csv file 
 * Datetime to work with time stuff
+
+## Purpose
+* Wanted to experiment whether using consistent sleep cycles is beneficial
+* Keep track of my sleep to make sure i'm getting enough
